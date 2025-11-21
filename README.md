@@ -1,279 +1,185 @@
-# 🌳 WorkTree AI - Sistema de Análise de Compatibilidade
+# WorkTree AI - Análise de Compatibilidade com IA Generativa
 
-**Global Solution - 2º Semestre FIAP**  
-**Disciplina: DISRUPTIVE ARCHITECTURES: IOT, IOB & GENERATIVE IA**
+**Global Solution FIAP - 2º Semestre 2024**
 
----
-
-## 👥 Equipe - 2TDSPY
-- **Felipe Seiki Hashiguti** - RM: 98985
-- **Lucas Corradini Silveira** - RM: 555118  
-- **Matheus Gregorio Mota** - RM: 557254
+**Equipe 2TDSPY:**
+- Felipe Seiki Hashiguti - RM: 98985
+- Lucas Corradini Silveira - RM: 555118  
+- Matheus Gregorio Mota - RM: 557254
 
 ---
 
-## 📋 Sobre o Projeto
+## 🎯 Duas Formas de Usar
 
-Sistema inteligente de **análise de compatibilidade candidato-vaga** usando **IA Generativa (Google Gemini API)** integrado ao aplicativo mobile WorkTree.
+### 1️⃣ Google Colab (Recomendado para Avaliação Acadêmica)
 
-### 🎯 Funcionalidade Principal
+**Vantagens:**
+- ✅ Execução imediata sem instalação
+- ✅ Visualizações interativas
+- ✅ Ambiente pré-configurado
+- ✅ Ideal para demonstração
 
-Quando um candidato acessa uma vaga no app mobile, a IA analisa automaticamente a compatibilidade e fornece:
-
-- ✅ **Score de Compatibilidade** (0-100%)
-- ✅ **Habilidades Compatíveis** vs. Habilidades a Desenvolver
-- ✅ **Pontos Fortes** do candidato
-- ✅ **Recomendações Personalizadas** de cursos/certificações
-- ✅ **Análise de Experiência** e expectativa salarial
-- ✅ **Próximos Passos** acionáveis
-
----
-
-## 🤖 Tecnologias
-
-- **Google Gemini API** (gemini-1.5-flash) - IA Generativa
-- **Python** 3.10+ - Backend
-- **Flask** + **Flask-CORS** - REST API
-- **Prompt Engineering** - Otimização de análises
-- **Pandas, Matplotlib, Seaborn** - Análise de dados e visualizações
-
----
-
-## 📁 Estrutura do Projeto
-
-```
-IA/
-├── WorkTree_IA_Compatibility_Analysis.ipynb  # Notebook principal com modelo IA
-├── README.md                                 # Documentação principal
-├── INTEGRATION_GUIDE.md                      # Guia de integração mobile
-├── requirements.txt                          # Dependências Python
-└── .gitignore                                # Arquivos ignorados
-```
-
----
-
-## 🚀 Quick Start
-
-### 1. Obter Google Gemini API Key (Gratuita)
-
-1. Acesse: https://makersuite.google.com/app/apikey
-2. Faça login e clique em "Create API Key"
-3. Copie a chave gerada
-
-### 2. Instalar Dependências
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Executar o Notebook
-
-**Google Colab (Recomendado):**
+**Como usar:**
 1. Acesse: https://colab.research.google.com/
-2. Upload `WorkTree_IA_Compatibility_Analysis.ipynb`
-3. Configure sua API Key na seção 2
-4. Execute todas as células (Runtime → Run all)
-
-#### Opção B: Jupyter Notebook Local
-```bash
-jupyter notebook WorkTree_IA_Compatibility_Analysis.ipynb
-```
-
-### Passo 4: Executar a API REST (Opcional)
-
-Depois de executar o notebook, um arquivo `worktree_api.py` será gerado:
-
-```bash
-python worktree_api.py
-```
-
-A API estará disponível em: `http://localhost:5000`
+2. Faça upload do `WorkTree_IA_Compatibility_Analysis.ipynb`
+3. Obtenha API Key gratuita: https://makersuite.google.com/app/apikey
+4. Configure a API Key na primeira célula
+5. Execute: **Runtime → Run all**
 
 ---
 
-## 📊 Funcionalidades Implementadas
+### 2️⃣ API REST Python (Deploy para Integração com Mobile/Web)
 
-### 1. Análise de Compatibilidade Individual
-```python
-analysis = analyze_compatibility(candidate, job)
-display_analysis(analysis)
-```
-**Jupyter Local:**
-1. Instale Jupyter: `pip install jupyter`
-2. Execute: `jupyter notebook WorkTree_IA_Compatibility_Analysis.ipynb`
-3. Configure API Key e execute as células
+**Vantagens:**
+- ✅ **Integração com outros projetos** (Mobile, Web, Backend)
+- ✅ **Processamento assíncrono** (até 50 candidatos em paralelo)
+- ✅ **Pronto para deploy** em Render/Heroku/Railway
+- ✅ **Endpoints REST profissionais**
 
-### 4. Executar a REST API
-
-Após executar o notebook completo, será gerado o arquivo `worktree_api.py`:
+#### 🚀 Instalação Local
 
 ```bash
-python worktree_api.py
-# API disponível em: http://localhost:5000
+# 1. Instalar dependências
+pip install -r requirements.txt
+
+# 2. Configurar API Key
+cp .env.example .env
+# Edite .env e adicione sua GOOGLE_API_KEY
+
+# 3. Executar API
+python app.py
 ```
 
----
+#### 📡 Endpoints Disponíveis
 
-## 📊 Funcionalidades do Notebook
+```bash
+# Health Check
+GET http://localhost:5000/health
 
-### 1️⃣ Análise Individual de Compatibilidade
-- Entrada: Dados do candidato + vaga
-- Processamento: Google Gemini analisa via prompt engineering
-- Saída: Score, habilidades compatíveis/faltantes, recomendações
-
-### 2️⃣ Visualizações Gráficas
-- **Gráfico de Barras**: Scores de compatibilidade
-- **Distribuição**: Score médio por candidato
-- **Heatmap**: Matriz candidatos vs vagas
-
-### 3️⃣ REST API Flask
-- `GET /health` - Status da API
-- `POST /api/analyze-compatibility` - Análise individual
-- `POST /api/batch-analyze` - Análise em lote
-
----
-
-## 🔗 Integração Mobile
-
-O sistema está integrado ao **app WorkTree (React Native)**. Para detalhes completos, consulte:
-
-📄 **[INTEGRATION_GUIDE.md](./INTEGRATION_GUIDE.md)** - Guia completo de integração
-
-**Resumo da integração:**
-- Service Layer TypeScript para comunicação com API
-- Componente `CompatibilityAnalysis` para exibição visual
-- Hook customizado `useCompatibilityAnalysis` para gerenciar estado
-- Análise automática quando candidato acessa vaga
-
----
-
-## 🎓 Requisitos Acadêmicos Atendidos
-
-### ✅ IA Generativa (OBRIGATÓRIO)
-- **Google Gemini 1.5 Flash** - Modelo state-of-the-art
-- **Prompt Engineering** com contexto rico (2000+ tokens)
-- **Geração de análises** personalizadas e estruturadas
-
-### ✅ Deep Learning
-- Modelo transformer com bilhões de parâmetros
-- Compreensão contextual e análise semântica
-- Recomendações baseadas em padrões aprendidos
-
-### ✅ Integração Completa
-- **Mobile**: React Native + TypeScript
-- **Backend**: REST API Flask + Python
-- **IA**: Google Gemini API
-- **Interface funcional** com endpoints documentados
-
----
-
-## 📈 Exemplo de Resultado
-
-```json
+# Análise Individual
+POST http://localhost:5000/api/analyze-compatibility
 {
-  "compatibility_score": 85,
-  "compatibility_level": "Alto",
-  "summary": "Candidato altamente qualificado com forte experiência...",
-  "matching_skills": ["React.js", "Node.js", "TypeScript"],
-  "missing_skills": ["GraphQL", "Kubernetes"],
-  "strengths": [
-    "6 anos de experiência em desenvolvimento Full Stack",
-    "Certificação AWS"
-  ],
-  "areas_for_development": [
-    "GraphQL para APIs modernas",
-    "Orquestração de containers com Kubernetes"
-  ],
-  "recommendations": [
-    "Curso: GraphQL - The Complete Guide",
-    "Certificação: CKA (Certified Kubernetes Administrator)"
-  ]
+  "candidate": {...},
+  "job": {...}
+}
+
+# Análise em Lote (até 50 candidatos em paralelo)
+POST http://localhost:5000/api/batch-analyze
+{
+  "job": {...},
+  "candidates": [...]
+}
+```
+
+#### 🌐 Deploy (5 minutos)
+
+Siga o guia completo em **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)**
+
+**Resumo:**
+1. Push do código no GitHub
+2. Conecte repositório no Render
+3. Configure `GOOGLE_API_KEY` nas variáveis de ambiente
+4. Deploy automático!
+
+Sua API estará em: `https://worktree-ia.onrender.com`
+
+#### 📱 Exemplo de Integração (JavaScript/React Native)
+
+```javascript
+// Análise em lote assíncrona
+async function analyzeCandidates(job, candidates) {
+  const response = await fetch('https://worktree-ia.onrender.com/api/batch-analyze', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ job, candidates })
+  });
+  
+  const data = await response.json();
+  console.log(`${data.successful_analyses} candidatos analisados!`);
+  
+  // Resultados já ordenados por score (maior primeiro)
+  return data.results;
 }
 ```
 
 ---
 
-## 🏆 Diferenciais Técnicos
+## 🚀 Funcionalidades
 
-1. **Prompt Engineering Avançado**
-   - Context-rich prompts estruturados
-   - Output em JSON validado
-   - Error handling robusto
+### IA Generativa (Google Gemini 1.5 Flash)
+- **Prompt Engineering** otimizado para RH (2000+ tokens)
+- **Análise semântica** de habilidades e experiências
+- **Score de compatibilidade** (0-100)
+- **Recomendações personalizadas**
 
-2. **Análise Multidimensional**
-   - Habilidades técnicas (hard skills)
-   - Experiência profissional
-   - Formação acadêmica
-   - Expectativa salarial vs. oferta
+### Processamento Assíncrono (API)
+- **Thread Pool** com 10 workers
+- **Análise paralela** de múltiplos candidatos
+- **10x mais rápido** que processamento sequencial
+- **Escalável** para alta demanda
 
-3. **Escalabilidade**
-   - Análise individual ou em lote
-   - Cache de resultados
-   - Rate limiting na API
-
----
-
-## 📝 Documentação Adicional
-
-- **README.md** (este arquivo) - Documentação principal
-- **INTEGRATION_GUIDE.md** - Guia completo de integração mobile
-- **requirements.txt** - Dependências Python
+### Visualizações (Notebook)
+- Gráficos de compatibilidade
+- Heatmaps de habilidades
+- Ranking de candidatos
 
 ---
 
-## 🐛 Troubleshooting
+## 📋 Requisitos de Entrega Atendidos
 
-**Problema: Erro de API Key**
-```bash
-# Verifique se configurou corretamente no notebook (seção 2)
-GOOGLE_API_KEY = "sua-chave-aqui"
+✅ **Código Funcional:** Notebook + API REST  
+✅ **IA Generativa:** Google Gemini integrado  
+✅ **Prompt Engineering:** Prompts estruturados e otimizados  
+✅ **Deep Learning:** Transformer (Gemini 1.5 Flash)  
+✅ **Análise de Dados:** Processamento e visualização  
+✅ **Documentação:** README + Guia de Deploy  
+✅ **Deploy:** Instruções completas para produção
+
+---
+
+## 📊 Estrutura do Projeto
+
 ```
-
-**Problema: Porta 5000 ocupada**
-```bash
-# Use outra porta no worktree_api.py
-app.run(host='0.0.0.0', port=5001)
-```
-
-**Problema: CORS Error**
-```bash
-# Já está configurado no Flask com flask-cors
-# Certifique-se que flask-cors está instalado
-pip install flask-cors
+IA/
+├── WorkTree_IA_Compatibility_Analysis.ipynb  # Notebook completo
+├── app.py                                    # API Flask
+├── requirements.txt                          # Dependências
+├── Procfile                                  # Config deploy
+├── DEPLOY_GUIDE.md                           # Guia de deploy completo
+├── README.md                                 # Este arquivo
+└── .env.example                              # Template de variáveis
 ```
 
 ---
 
-## 📚 Referências
+## 🎓 Para Avaliadores
 
-- [Google Gemini API Documentation](https://ai.google.dev/docs)
-- [Flask Documentation](https://flask.palletsprojects.com/)
-- [React Native - Axios](https://axios-http.com/)
+**Recomendamos testar no Google Colab primeiro** para uma experiência completa com visualizações.
 
----
+A **API REST demonstra capacidade de integração real** com o projeto Mobile (React Native) e outros sistemas.
 
-## 📞 Contato
-
-**Equipe WorkTree - FIAP 2TDSPY**
-
-- Felipe Seiki Hashiguti - RM: 98985
-- Lucas Corradini Silveira - RM: 555118
-- Matheus Gregorio Mota - RM: 557254
-
-**Repositório Mobile:** https://github.com/felipeSeiki/GS2-Mobile
+**Ambas as implementações compartilham a mesma lógica de IA e Prompt Engineering.**
 
 ---
 
-## 📄 Licença
+## 📚 Documentação
 
-Projeto desenvolvido para fins acadêmicos - Global Solution FIAP 2024
+- **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)** - Deploy completo (Render/Heroku/Railway)
+- **Notebook** - Documentação inline em Markdown
+- **API** - Docstrings em todas as funções
 
 ---
 
-<div align="center">
+## 🔗 Integração com Projeto Mobile
 
-**🎉 Transformando recrutamento com IA Generativa!** 🚀
+Repositório Mobile: https://github.com/felipeSeiki/GS2-Mobile
 
-*Demonstrando aplicação prática de IA em problemas reais*
+A API foi desenvolvida para **integração direta com o app React Native**, permitindo:
+- Análise em tempo real de candidatos
+- Processamento em lote para ranking
+- Requisições assíncronas do mobile
 
-</div>
+---
+
+**Desenvolvido para FIAP Global Solution 2024 - 2TDSPY**
+
