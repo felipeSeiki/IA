@@ -27,8 +27,8 @@ else:
     genai.configure(api_key=GOOGLE_API_KEY)
     logger.info("✅ GOOGLE_API_KEY configurada com sucesso")
 
-# IMPORTANTE: Usar 'gemini-pro' que é o modelo estável e compatível
-MODEL_NAME = 'gemini-pro'
+# Modelo Gemini 1.5 Flash - Requer google-generativeai >= 0.8.0
+MODEL_NAME = 'gemini-1.5-flash'
 logger.info(f"🤖 Inicializando modelo: {MODEL_NAME}")
 
 model = genai.GenerativeModel(

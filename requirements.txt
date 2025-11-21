@@ -1,8 +1,8 @@
 # WorkTree AI - Análise de Compatibilidade
 # Global Solution FIAP - 2º Semestre 2024
 
-# IA Generativa
-google-generativeai>=0.3.0
+# IA Generativa - Versão atualizada para suporte completo ao Gemini 1.5
+google-generativeai==0.8.3
 
 # API REST
 Flask>=3.0.0
