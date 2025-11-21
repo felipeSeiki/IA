@@ -25,9 +25,14 @@ if not GOOGLE_API_KEY:
     logger.warning("GOOGLE_API_KEY não configurada! Configure antes do deploy.")
 else:
     genai.configure(api_key=GOOGLE_API_KEY)
+    logger.info("✅ GOOGLE_API_KEY configurada com sucesso")
+
+# IMPORTANTE: Nome do modelo SEM o prefixo 'models/' para compatibilidade v1beta
+MODEL_NAME = 'gemini-1.5-flash'
+logger.info(f"🤖 Inicializando modelo: {MODEL_NAME}")
 
 model = genai.GenerativeModel(
-    model_name='gemini-1.5-flash',  # SEM o prefixo 'models/'
+    model_name=MODEL_NAME,
     generation_config={
         'temperature': 0.7,
         'top_p': 0.95,
@@ -35,6 +40,7 @@ model = genai.GenerativeModel(
         'max_output_tokens': 2048,
     }
 )
+logger.info(f"✅ Modelo {MODEL_NAME} inicializado com sucesso")
 
 # Thread pool para processamento paralelo
 executor = ThreadPoolExecutor(max_workers=10)
@@ -85,8 +91,13 @@ def analyze_single(candidate, job):
     Função otimizada para execução em thread pool
     """
     try:
+        logger.info(f"🔍 Iniciando análise - Candidato: {candidate.get('id')}, Vaga: {job.get('id')}")
         prompt = create_compatibility_prompt(candidate, job)
+        
+        logger.info(f"🤖 Chamando modelo: {MODEL_NAME}")
         response = model.generate_content(prompt)
+        logger.info("✅ Resposta recebida do modelo")
+        
         response_text = response.text.strip()
         
         # Limpar possíveis marcadores de código
@@ -128,11 +139,16 @@ def analyze_single(candidate, job):
         }
         
     except Exception as e:
-        logger.error(f"Erro na análise: {e}")
+        error_msg = str(e)
+        logger.error(f"❌ ERRO na análise: {error_msg}")
+        logger.error(f"   Tipo do erro: {type(e).__name__}")
+        logger.error(f"   Modelo usado: {MODEL_NAME}")
         return {
             'success': False,
             'error': 'Analysis failed',
-            'details': str(e),
+            'details': error_msg,
+            'error_type': type(e).__name__,
+            'model_name': MODEL_NAME,
             'candidate_id': candidate.get('id'),
             'job_id': job.get('id')
         }
@@ -147,6 +163,17 @@ def health_check():
         'version': '1.0.0',
         'timestamp': datetime.now().isoformat(),
         'api_key_configured': GOOGLE_API_KEY is not None
+    }), 200
+
+
+@app.route('/api/debug-model', methods=['GET'])
+def debug_model():
+    """Endpoint de debug para verificar configuração do modelo"""
+    return jsonify({
+        'model_name': MODEL_NAME,
+        'model_object': str(model),
+        'api_configured': GOOGLE_API_KEY is not None,
+        'timestamp': datetime.now().isoformat()
     }), 200
 
 
