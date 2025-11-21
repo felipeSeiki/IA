@@ -28,9 +28,9 @@ else:
     genai.configure(api_key=GOOGLE_API_KEY)
     logger.info("✅ GOOGLE_API_KEY configurada com sucesso")
 
-# Modelo Gemini 1.5 Flash via API REST (v1beta)
-MODEL_NAME = 'gemini-1.5-flash'
-GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent"
+# Modelo Gemini 2.0 Flash via API REST (v1)
+MODEL_NAME = 'gemini-2.0-flash'
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent"
 logger.info(f"🤖 Configurado para usar: {MODEL_NAME} via API REST")
 
 # Configuração de geração
