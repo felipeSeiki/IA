@@ -27,8 +27,8 @@ else:
     genai.configure(api_key=GOOGLE_API_KEY)
     logger.info("✅ GOOGLE_API_KEY configurada com sucesso")
 
-# IMPORTANTE: Nome do modelo SEM o prefixo 'models/' para compatibilidade v1beta
-MODEL_NAME = 'gemini-1.5-flash'
+# IMPORTANTE: Usar 'gemini-pro' que é o modelo estável e compatível
+MODEL_NAME = 'gemini-pro'
 logger.info(f"🤖 Inicializando modelo: {MODEL_NAME}")
 
 model = genai.GenerativeModel(
@@ -120,7 +120,7 @@ def analyze_single(candidate, job):
             'job_id': job.get('id'),
             'job_title': job.get('title'),
             'analyzed_at': datetime.now().isoformat(),
-            'model': 'gemini-1.5-flash'
+            'model': MODEL_NAME
         }
         
         return {
