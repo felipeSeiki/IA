@@ -135,6 +135,21 @@ def analyze_single(candidate, job):
         # Parse JSON
         analysis = json.loads(response_text)
         
+        # Adicionar valores padrão para campos opcionais (caso o modelo não retorne)
+        if 'experience_match' not in analysis:
+            analysis['experience_match'] = {
+                'required_years': 0,
+                'candidate_years': candidate.get('experience_years', 0),
+                'analysis': 'Análise de experiência não disponível'
+            }
+        
+        if 'salary_expectation' not in analysis:
+            analysis['salary_expectation'] = {
+                'job_range': job.get('salary', 'Não informado'),
+                'alignment': 'N/A',
+                'comment': 'Análise salarial não disponível'
+            }
+        
         # Adicionar metadados
         analysis['metadata'] = {
             'candidate_id': candidate.get('id'),
