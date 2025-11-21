@@ -11,6 +11,7 @@ from datetime import datetime
 import os
 from concurrent.futures import ThreadPoolExecutor
 import logging
+import requests  # Para chamar API REST diretamente
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -27,20 +28,18 @@ else:
     genai.configure(api_key=GOOGLE_API_KEY)
     logger.info("✅ GOOGLE_API_KEY configurada com sucesso")
 
-# Modelo Gemini 1.5 Flash - Requer google-generativeai >= 0.8.0
-MODEL_NAME = 'gemini-1.5-flash'
-logger.info(f"🤖 Inicializando modelo: {MODEL_NAME}")
+# Modelo Gemini 1.5 Flash via API REST
+MODEL_NAME = 'gemini-1.5-flash-latest'
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent"
+logger.info(f"🤖 Configurado para usar: {MODEL_NAME} via API REST")
 
-model = genai.GenerativeModel(
-    model_name=MODEL_NAME,
-    generation_config={
-        'temperature': 0.7,
-        'top_p': 0.95,
-        'top_k': 40,
-        'max_output_tokens': 2048,
-    }
-)
-logger.info(f"✅ Modelo {MODEL_NAME} inicializado com sucesso")
+# Configuração de geração
+GENERATION_CONFIG = {
+    'temperature': 0.7,
+    'topP': 0.95,
+    'topK': 40,
+    'maxOutputTokens': 2048,
+}
 
 # Thread pool para processamento paralelo
 executor = ThreadPoolExecutor(max_workers=10)
@@ -88,17 +87,40 @@ Analise agora e retorne APENAS o JSON, sem texto adicional, sem markdown.
 def analyze_single(candidate, job):
     """
     Analisa compatibilidade entre um candidato e uma vaga
-    Função otimizada para execução em thread pool
+    Função otimizada para execução em thread pool - USA API REST DIRETAMENTE
     """
     try:
         logger.info(f"🔍 Iniciando análise - Candidato: {candidate.get('id')}, Vaga: {job.get('id')}")
         prompt = create_compatibility_prompt(candidate, job)
         
-        logger.info(f"🤖 Chamando modelo: {MODEL_NAME}")
-        response = model.generate_content(prompt)
+        # Chamar API REST do Gemini diretamente
+        logger.info(f"🤖 Chamando {MODEL_NAME} via API REST")
+        
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }],
+            "generationConfig": GENERATION_CONFIG
+        }
+        
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.post(
+            f"{GEMINI_API_URL}?key={GOOGLE_API_KEY}",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        response.raise_for_status()
+        result = response.json()
+        
         logger.info("✅ Resposta recebida do modelo")
         
-        response_text = response.text.strip()
+        # Extrair texto da resposta
+        response_text = result['candidates'][0]['content']['parts'][0]['text'].strip()
         
         # Limpar possíveis marcadores de código
         if response_text.startswith("```json"):
@@ -171,8 +193,10 @@ def debug_model():
     """Endpoint de debug para verificar configuração do modelo"""
     return jsonify({
         'model_name': MODEL_NAME,
-        'model_object': str(model),
+        'api_url': GEMINI_API_URL,
+        'method': 'REST API (direct)',
         'api_configured': GOOGLE_API_KEY is not None,
+        'generation_config': GENERATION_CONFIG,
         'timestamp': datetime.now().isoformat()
     }), 200
 
