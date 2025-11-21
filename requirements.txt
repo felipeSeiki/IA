@@ -1,0 +1,25 @@
+# WorkTree AI - Análise de Compatibilidade
+# Global Solution FIAP - 2º Semestre 2024
+
+# IA Generativa
+google-generativeai>=0.3.0
+
+# API REST
+Flask>=3.0.0
+flask-cors>=4.0.0
+
+# Análise de Dados
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualização
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Utilitários
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Opcional - Para desenvolvimento
+jupyter>=1.0.0
+ipykernel>=6.25.0
