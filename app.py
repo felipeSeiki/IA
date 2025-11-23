@@ -1,17 +1,15 @@
 """
-WorkTree AI - API Flask para Deploy
-Versão otimizada para produção com suporte a requisições assíncronas
+WorkTree AI - API Flask para Análise de Compatibilidade
+Integração com Google Gemini 2.0 Flash
 """
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import google.generativeai as genai
 import json
 from datetime import datetime
 import os
-from concurrent.futures import ThreadPoolExecutor
 import logging
-import requests  # Para chamar API REST diretamente
+import requests
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -20,29 +18,24 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-# Configurar Gemini API via variável de ambiente
+# Configurar Gemini API
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
 if not GOOGLE_API_KEY:
-    logger.warning("GOOGLE_API_KEY não configurada! Configure antes do deploy.")
+    logger.warning("⚠️ GOOGLE_API_KEY não configurada!")
 else:
-    genai.configure(api_key=GOOGLE_API_KEY)
-    logger.info("✅ GOOGLE_API_KEY configurada com sucesso")
+    logger.info("✅ GOOGLE_API_KEY configurada")
 
-# Modelo Gemini 2.0 Flash via API REST (v1)
+# Modelo Gemini 2.0 Flash
 MODEL_NAME = 'gemini-2.0-flash'
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent"
-logger.info(f"🤖 Configurado para usar: {MODEL_NAME} via API REST")
 
-# Configuração de geração
+# Configuração do modelo
 GENERATION_CONFIG = {
     'temperature': 0.7,
     'topP': 0.95,
     'topK': 40,
     'maxOutputTokens': 2048,
 }
-
-# Thread pool para processamento paralelo
-executor = ThreadPoolExecutor(max_workers=10)
 
 
 def create_compatibility_prompt(candidate, job):
@@ -84,71 +77,37 @@ Analise agora e retorne APENAS o JSON, sem texto adicional, sem markdown.
     return prompt
 
 
-def analyze_single(candidate, job):
-    """
-    Analisa compatibilidade entre um candidato e uma vaga
-    Função otimizada para execução em thread pool - USA API REST DIRETAMENTE
-    """
+def analyze_compatibility_ai(candidate, job):
+    """Analisa compatibilidade entre candidato e vaga usando Gemini"""
     try:
-        logger.info(f"🔍 Iniciando análise - Candidato: {candidate.get('id')}, Vaga: {job.get('id')}")
+        logger.info(f"🔍 Analisando: {candidate.get('name')} → {job.get('title')}")
+        
+        # Criar prompt
         prompt = create_compatibility_prompt(candidate, job)
         
-        # Chamar API REST do Gemini diretamente
-        logger.info(f"🤖 Chamando {MODEL_NAME} via API REST")
-        
+        # Chamar Gemini API
         payload = {
-            "contents": [{
-                "parts": [{"text": prompt}]
-            }],
+            "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": GENERATION_CONFIG
-        }
-        
-        headers = {
-            "Content-Type": "application/json"
         }
         
         response = requests.post(
             f"{GEMINI_API_URL}?key={GOOGLE_API_KEY}",
-            headers=headers,
+            headers={"Content-Type": "application/json"},
             json=payload,
             timeout=30
         )
-        
         response.raise_for_status()
+        
+        # Extrair resposta
         result = response.json()
-        
-        logger.info("✅ Resposta recebida do modelo")
-        
-        # Extrair texto da resposta
         response_text = result['candidates'][0]['content']['parts'][0]['text'].strip()
         
-        # Limpar possíveis marcadores de código
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.startswith("```"):
-            response_text = response_text[3:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-        
-        response_text = response_text.strip()
+        # Limpar markdown
+        response_text = response_text.replace("```json", "").replace("```", "").strip()
         
         # Parse JSON
         analysis = json.loads(response_text)
-        
-        # Adicionar valores padrão para campos opcionais (caso o modelo não retorne)
-        if 'experience_match' not in analysis:
-            analysis['experience_match'] = {
-                'required_years': 0,
-                'candidate_years': candidate.get('experience_years', 0),
-                'analysis': 'Análise de experiência não disponível'
-            }
-        
-        if 'salary_expectation' not in analysis:
-            analysis['salary_expectation'] = {
-                'job_range': job.get('salary', 'Não informado'),
-                'alignment': 'N/A',
-                'comment': 'Análise salarial não disponível'
-            }
         
         # Adicionar metadados
         analysis['metadata'] = {
@@ -160,58 +119,21 @@ def analyze_single(candidate, job):
             'model': MODEL_NAME
         }
         
-        return {
-            'success': True,
-            'data': analysis
-        }
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Erro ao fazer parse do JSON: {e}")
-        return {
-            'success': False,
-            'error': 'Failed to parse AI response',
-            'details': str(e),
-            'candidate_id': candidate.get('id'),
-            'job_id': job.get('id')
-        }
+        logger.info(f"✅ Score: {analysis.get('compatibility_score')}%")
+        return analysis
         
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"❌ ERRO na análise: {error_msg}")
-        logger.error(f"   Tipo do erro: {type(e).__name__}")
-        logger.error(f"   Modelo usado: {MODEL_NAME}")
-        return {
-            'success': False,
-            'error': 'Analysis failed',
-            'details': error_msg,
-            'error_type': type(e).__name__,
-            'model_name': MODEL_NAME,
-            'candidate_id': candidate.get('id'),
-            'job_id': job.get('id')
-        }
+        logger.error(f"❌ Erro na análise: {e}")
+        raise
 
 
-@app.route('/health', methods=['GET'])
+@app.route('/api/health', methods=['GET'])
 def health_check():
-    """Endpoint para verificar se a API está funcionando"""
+    """Verifica se a API está online"""
     return jsonify({
         'status': 'online',
-        'service': 'WorkTree AI Compatibility Analysis',
-        'version': '1.0.0',
-        'timestamp': datetime.now().isoformat(),
-        'api_key_configured': GOOGLE_API_KEY is not None
-    }), 200
-
-
-@app.route('/api/debug-model', methods=['GET'])
-def debug_model():
-    """Endpoint de debug para verificar configuração do modelo"""
-    return jsonify({
-        'model_name': MODEL_NAME,
-        'api_url': GEMINI_API_URL,
-        'method': 'REST API (direct)',
-        'api_configured': GOOGLE_API_KEY is not None,
-        'generation_config': GENERATION_CONFIG,
+        'api_key_configured': GOOGLE_API_KEY is not None,
+        'model': MODEL_NAME,
         'timestamp': datetime.now().isoformat()
     }), 200
 
@@ -219,191 +141,50 @@ def debug_model():
 @app.route('/api/analyze-compatibility', methods=['POST'])
 def analyze_compatibility():
     """
-    Endpoint principal para análise de compatibilidade
+    Analisa compatibilidade entre candidato e vaga
     
-    Request Body:
-    {
-        "candidate": {
-            "id": "c1",
-            "name": "João Silva",
-            "title": "Desenvolvedor",
-            "experience_years": 5,
-            "skills": ["Python", "JavaScript"]
-        },
-        "job": {
-            "id": "j1",
-            "title": "Desenvolvedor Full Stack",
-            "company": "Tech Corp",
-            "required_skills": ["Python", "JavaScript", "SQL"],
-            "salary": "R$ 10.000"
-        }
-    }
+    Body: { "candidate": {...}, "job": {...} }
     """
     try:
         data = request.get_json()
         
-        if not data:
-            return jsonify({
-                'error': 'No data provided',
-                'message': 'Request body must contain JSON data'
-            }), 400
+        # Validar dados
+        if not data or 'candidate' not in data or 'job' not in data:
+            return jsonify({'error': 'Campos "candidate" e "job" são obrigatórios'}), 400
         
-        if 'candidate' not in data or 'job' not in data:
-            return jsonify({
-                'error': 'Missing required fields',
-                'message': 'Both "candidate" and "job" are required'
-            }), 400
-        
-        # Validar estrutura básica
-        candidate = data['candidate']
-        job = data['job']
-        
-        if not isinstance(candidate, dict) or not isinstance(job, dict):
-            return jsonify({
-                'error': 'Invalid data format',
-                'message': 'Both candidate and job must be objects'
-            }), 400
-        
-        # Processar análise
-        result = analyze_single(candidate, job)
-        
-        if result['success']:
-            return jsonify(result['data']), 200
-        else:
-            return jsonify({
-                'error': result['error'],
-                'details': result.get('details')
-            }), 500
+        # Analisar
+        result = analyze_compatibility_ai(data['candidate'], data['job'])
+        return jsonify(result), 200
         
     except Exception as e:
-        logger.error(f"Erro no endpoint analyze-compatibility: {e}")
-        return jsonify({
-            'error': 'Internal server error',
-            'details': str(e)
-        }), 500
-
-
-@app.route('/api/batch-analyze', methods=['POST'])
-def batch_analyze():
-    """
-    Análise em lote - processa múltiplos candidatos em paralelo
-    
-    Request Body:
-    {
-        "job": {...},
-        "candidates": [{...}, {...}, ...]
-    }
-    
-    Retorna lista de análises ordenadas por score
-    """
-    try:
-        data = request.get_json()
-        
-        if not data or 'job' not in data or 'candidates' not in data:
-            return jsonify({
-                'error': 'Missing required fields',
-                'message': 'Both "job" and "candidates" array are required'
-            }), 400
-        
-        job = data['job']
-        candidates = data['candidates']
-        
-        if not isinstance(candidates, list):
-            return jsonify({
-                'error': 'Invalid data format',
-                'message': 'Candidates must be an array'
-            }), 400
-        
-        if len(candidates) == 0:
-            return jsonify({
-                'error': 'Empty candidates list',
-                'message': 'At least one candidate is required'
-            }), 400
-        
-        # Limitar a 50 candidatos por request para evitar timeout
-        if len(candidates) > 50:
-            return jsonify({
-                'error': 'Too many candidates',
-                'message': 'Maximum 50 candidates per request'
-            }), 400
-        
-        # Processar em paralelo usando thread pool
-        futures = [
-            executor.submit(analyze_single, candidate, job)
-            for candidate in candidates
-        ]
-        
-        # Coletar resultados
-        results = [future.result() for future in futures]
-        
-        # Separar sucessos e erros
-        successful = [r['data'] for r in results if r['success']]
-        failed = [r for r in results if not r['success']]
-        
-        # Ordenar por score (maior primeiro)
-        successful.sort(
-            key=lambda x: x.get('compatibility_score', 0),
-            reverse=True
-        )
-        
-        return jsonify({
-            'job_id': job.get('id'),
-            'job_title': job.get('title'),
-            'total_candidates': len(candidates),
-            'successful_analyses': len(successful),
-            'failed_analyses': len(failed),
-            'analyzed_at': datetime.now().isoformat(),
-            'results': successful,
-            'errors': failed if failed else None
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Erro no endpoint batch-analyze: {e}")
-        return jsonify({
-            'error': 'Batch analysis failed',
-            'details': str(e)
-        }), 500
+        logger.error(f"Erro: {e}")
+        return jsonify({'error': 'Erro ao processar análise', 'details': str(e)}), 500
 
 
 @app.errorhandler(404)
 def not_found(e):
-    """Handler para rotas não encontradas"""
+    """Rota não encontrada"""
     return jsonify({
-        'error': 'Not found',
-        'message': 'The requested endpoint does not exist',
-        'available_endpoints': [
-            'GET /health',
-            'POST /api/analyze-compatibility',
-            'POST /api/batch-analyze'
+        'error': 'Endpoint não encontrado',
+        'endpoints_disponiveis': [
+            'GET  /api/health',
+            'POST /api/analyze-compatibility'
         ]
     }), 404
-
-
-@app.errorhandler(500)
-def internal_error(e):
-    """Handler para erros internos"""
-    logger.error(f"Internal server error: {e}")
-    return jsonify({
-        'error': 'Internal server error',
-        'message': 'An unexpected error occurred'
-    }), 500
 
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     
-    print("=" * 60)
-    print("WorkTree AI API - Iniciada")
-    print("=" * 60)
-    print("\nEndpoints disponíveis:")
-    print(f"  GET  http://localhost:{port}/health")
-    print(f"  POST http://localhost:{port}/api/analyze-compatibility")
-    print(f"  POST http://localhost:{port}/api/batch-analyze")
-    print("\nRecursos:")
-    print(f"  - Thread Pool: {executor._max_workers} workers")
-    print(f"  - Processamento paralelo: Habilitado")
-    print(f"  - API Key configurada: {'Sim' if GOOGLE_API_KEY else 'Não'}")
-    print("=" * 60)
+    print("\n" + "=" * 50)
+    print("🚀 WorkTree AI API")
+    print("=" * 50)
+    print(f"\n📡 Endpoints:")
+    print(f"   GET  /api/health")
+    print(f"   POST /api/analyze-compatibility")
+    print(f"\n🤖 Modelo: {MODEL_NAME}")
+    print(f"🔑 API Key: {'Configurada ✅' if GOOGLE_API_KEY else 'Não configurada ⚠️'}")
+    print(f"🌐 Porta: {port}")
+    print("=" * 50 + "\n")
     
-    # Produção: use gunicorn/waitress ao invés do servidor Flask de desenvolvimento
     app.run(host='0.0.0.0', port=port, debug=False)
