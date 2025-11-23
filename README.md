@@ -7,6 +7,8 @@
 - Lucas Corradini Silveira - RM: 555118  
 - Matheus Gregorio Mota - RM: 557254
 
+🎥 **[Vídeo de Apresentação](https://youtu.be/JpT3zBdu7MA)**
+
 ---
 
 ## 🎯 Sobre o Projeto
